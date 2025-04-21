@@ -1,0 +1,147 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "CoroadinhoMenu"
+
+-- Mensagem Anti-Cheat Ligado
+local msg = Instance.new("TextLabel", gui)
+msg.Text = "Anti-Cheat ligado"
+msg.Size = UDim2.new(0.4, 0, 0.05, 0)
+msg.Position = UDim2.new(0.3, 0, 0.05, 0)
+msg.BackgroundColor3 = Color3.new(0, 0.6, 0)
+msg.TextColor3 = Color3.new(1, 1, 1)
+msg.BackgroundTransparency = 0.3
+msg.TextScaled = true
+task.delay(3, function() msg:Destroy() end)
+
+-- Anti-Cheat Simples (bloqueia tentativas de kick)
+task.spawn(function()
+    hookfunction(Instance.new("RemoteEvent").FireServer, newcclosure(function(self, ...)
+        local args = { ... }
+        for _, v in ipairs(args) do
+            if typeof(v) == "string" and v:lower():find("kick") then
+                return nil
+            end
+        end
+        return self:FireServer(unpack(args))
+    end))
+end)
+
+-- Menu Principal
+local menu = Instance.new("Frame", gui)
+menu.Size = UDim2.new(0.5, 0, 0.55, 0)
+menu.Position = UDim2.new(0.25, 0, 0.25, 0)
+menu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+menu.BorderSizePixel = 0
+menu.Active = true
+menu.Draggable = true
+
+local title = Instance.new("TextLabel", menu)
+title.Text = "Criado por @coroadinho_37203(beta)"
+title.Size = UDim2.new(1, 0, 0.15, 0)
+title.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextScaled = true
+
+-- Funções
+local espEnabled = false
+local espLabels = {}
+
+local function updateESP()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
+            local head = p.Character.Head
+            if espEnabled then
+                if not espLabels[p] then
+                    local gui = Instance.new("BillboardGui", head)
+                    gui.Name = "ESPLabel"
+                    gui.Size = UDim2.new(0, 100, 0, 40)
+                    gui.AlwaysOnTop = true
+
+                    local text = Instance.new("TextLabel", gui)
+                    text.Size = UDim2.new(1, 0, 1, 0)
+                    text.BackgroundTransparency = 1
+                    text.TextScaled = true
+                    text.TextColor3 = p.Team == player.Team and Color3.new(0, 0, 1) or Color3.new(1, 0, 0)
+                    espLabels[p] = text
+
+                    RunService.RenderStepped:Connect(function()
+                        if p.Character and p.Character:FindFirstChild("Head") and player.Character and player.Character:FindFirstChild("Head") then
+                            local dist = math.floor((p.Character.Head.Position - player.Character.Head.Position).Magnitude)
+                            text.Text = p.Name .. " [" .. dist .. "m]"
+                        end
+                    end)
+                end
+            else
+                if head:FindFirstChild("ESPLabel") then
+                    head:FindFirstChild("ESPLabel"):Destroy()
+                    espLabels[p] = nil
+                end
+            end
+        end
+    end
+end
+
+-- ESP Button
+local espBtn = Instance.new("TextButton", menu)
+espBtn.Text = "ESP [OFF]"
+espBtn.Size = UDim2.new(0.8, 0, 0.12, 0)
+espBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
+espBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+espBtn.TextColor3 = Color3.new(1, 1, 1)
+espBtn.TextScaled = true
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = "ESP [" .. (espEnabled and "ON" or "OFF") .. "]"
+    updateESP()
+end)
+
+-- Chat Bypasser
+local chatBypass = false
+
+local chatBox = Instance.new("TextBox", menu)
+chatBox.PlaceholderText = "Mensagem segura"
+chatBox.Size = UDim2.new(0.8, 0, 0.12, 0)
+chatBox.Position = UDim2.new(0.1, 0, 0.35, 0)
+chatBox.BackgroundColor3 = Color3.fromRGB(35,35,35)
+chatBox.TextColor3 = Color3.new(1,1,1)
+chatBox.TextScaled = true
+
+local sendBtn = Instance.new("TextButton", menu)
+sendBtn.Text = "Enviar Mensagem"
+sendBtn.Size = UDim2.new(0.8, 0, 0.12, 0)
+sendBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
+sendBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+sendBtn.TextColor3 = Color3.new(1,1,1)
+sendBtn.TextScaled = true
+
+sendBtn.MouseButton1Click:Connect(function()
+    if chatBypass then
+        local msg = chatBox.Text
+        if msg and #msg > 0 then
+            game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+            chatBox.Text = ""
+        end
+    end
+end)
+
+-- Toggle Bypass
+local bypassToggle = Instance.new("TextButton", menu)
+bypassToggle.Text = "Bypass [OFF]"
+bypassToggle.Size = UDim2.new(0.8, 0, 0.12, 0)
+bypassToggle.Position = UDim2.new(0.1, 0, 0.65, 0)
+bypassToggle.BackgroundColor3 = Color3.fromRGB(80,80,80)
+bypassToggle.TextColor3 = Color3.new(1,1,1)
+bypassToggle.TextScaled = true
+
+bypassToggle.MouseButton1Click:Connect(function()
+    chatBypass = not chatBypass
+    bypassToggle.Text = "Bypass [" .. (chatBypass and "ON" or "OFF") .. "]"
+end)
